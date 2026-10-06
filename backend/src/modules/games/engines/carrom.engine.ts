@@ -25,6 +25,9 @@ export const POCKETS = [
 export const BASELINE_Y = [82, 18] as const
 export const BASELINE_X = [22, 78] as const
 export const MAX_SHOTS = 60
+/** Clients replay shots at this fraction of real time so every coin's path is easy to follow (mirrored in CarromBoard.tsx). */
+export const CARROM_PLAYBACK_SPEED = 0.5
+const FRAME_MS = 1000 / 30
 const MAX_SPEED = 170 // units / second at power 1
 const DT = 1 / 240
 const MAX_STEPS = 240 * 12
@@ -345,6 +348,8 @@ export const carromEngine: GameEngine<CarromState, Move> = {
 
   getState: (s) => s,
   getCurrentSeat: (s) => (s.winnerSeat !== null || s.draw || lastStanding(s) !== null ? null : s.turnSeat),
+
+  animationMs: (s) => (s.lastShot ? Math.round((s.lastShot.frames.length * FRAME_MS) / CARROM_PLAYBACK_SPEED) + 400 : 0),
 
   getWinner(s) {
     const standing = lastStanding(s)

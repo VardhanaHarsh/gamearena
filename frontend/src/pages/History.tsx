@@ -4,8 +4,8 @@ import { useSearchParams } from 'react-router'
 import { Modal } from '../components/Modal'
 import { Badge, Credits, EmptyState, PageHeader, Spinner, statusTone } from '../components/ui'
 import { dateTime } from '../lib/format'
-import { gameStyle } from '../lib/games'
 import { api } from '../services/api'
+import { GameIcon } from '../components/GameIcon'
 
 interface HistoryItem {
   room_id: string
@@ -118,7 +118,7 @@ export function History() {
             <tbody className="divide-y divide-line">
               {data.items.map((h) => (
                 <tr key={h.room_id} onClick={() => setParams({ game: h.room_id })} className="cursor-pointer transition hover:bg-surface" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && setParams({ game: h.room_id })}>
-                  <td className="p-4 font-medium">{gameStyle(h.game_key).emoji} {h.game_key} {h.is_practice && <Badge tone="primary">practice</Badge>}</td>
+                  <td className="p-4 font-medium"><span className="inline-flex items-center gap-2 align-middle"><GameIcon game={h.game_key} size={28} />{h.game_key}</span> {h.is_practice && <Badge tone="primary">practice</Badge>}</td>
                   <td className="text-muted">{dateTime(h.ended_at ?? h.created_at)}</td>
                   <td className="max-w-48 truncate text-muted">{h.players?.map((p) => p.name).join(', ')}</td>
                   <td><Badge tone={statusTone(h.result)}>{h.result}</Badge></td>

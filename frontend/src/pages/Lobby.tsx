@@ -9,6 +9,7 @@ import { gameStyle } from '../lib/games'
 import { api } from '../services/api'
 import { getSocket } from '../services/socket'
 import type { GameInfo, LobbyRoom } from '../types/api'
+import { GameIcon } from '../components/GameIcon'
 
 export function Lobby() {
   const [filter, setFilter] = useState<string>('all')
@@ -84,7 +85,7 @@ export function Lobby() {
             <div key={g.key} className="card relative overflow-hidden p-4">
               <div className="absolute -top-8 -right-8 size-24 rounded-full opacity-30 blur-2xl" style={{ background: st.to }} />
               <div className="flex items-start justify-between">
-                <span className="text-3xl">{st.emoji}</span>
+                <GameIcon game={g.key} size={44} />
                 <span className="flex items-center gap-1 text-[11px] text-success">
                   <span className="pulse-dot relative size-1.5 rounded-full bg-success text-success" />
                   {g.playersOnline ?? 0} online
@@ -119,15 +120,12 @@ export function Lobby() {
         <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           <AnimatePresence initial={false}>
             {data.rooms.map((r) => {
-              const st = gameStyle(r.game_key)
               const joinable = (r.status === 'WAITING' || r.status === 'READY') && r.players < r.max_players
               return (
                 <motion.li key={r.id} layout initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} className="card p-4">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <span className="flex size-11 items-center justify-center rounded-xl text-2xl" style={{ background: `linear-gradient(135deg, ${st.from}33, ${st.to}33)` }}>
-                        {st.emoji}
-                      </span>
+                      <GameIcon game={r.game_key} size={44} />
                       <div>
                         <p className="font-display font-semibold">{nameOf(r.game_key)}</p>
                         <p className="font-mono text-[11px] text-subtle">#{r.code} · host {r.host_name}</p>

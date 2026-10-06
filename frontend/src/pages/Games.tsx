@@ -9,6 +9,7 @@ import { useRoomActions } from '../hooks/useRoomActions'
 import { gameStyle } from '../lib/games'
 import { api } from '../services/api'
 import type { GameInfo, LobbyRoom } from '../types/api'
+import { GameIcon } from '../components/GameIcon'
 
 export function GamesList() {
   const { data, isLoading } = useQuery({ queryKey: ['games'], queryFn: () => api<{ games: GameInfo[] }>('/games') })
@@ -18,12 +19,11 @@ export function GamesList() {
       <PageHeader eyebrow="Catalogue" title="Games" description="Every game runs on the same modular, server-authoritative engine interface." />
       <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {data?.games.map((g, i) => {
-          const st = gameStyle(g.key)
           return (
             <motion.li key={g.key} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
               <Link to={g.available ? `/games/${g.key}` : '#'} className={`card group block h-full p-5 transition hover:-translate-y-0.5 hover:border-primary-2/50 ${g.available ? '' : 'pointer-events-none opacity-60'}`}>
                 <div className="flex items-center justify-between">
-                  <span className="text-4xl">{st.emoji}</span>
+                  <GameIcon game={g.key} size={56} className="transition duration-300 group-hover:scale-110 group-hover:-rotate-6" />
                   {g.available ? <Badge tone="success">{g.playersOnline ?? 0} online</Badge> : <Badge>Coming soon</Badge>}
                 </div>
                 <h2 className="mt-4 font-display text-2xl font-bold">{g.name}</h2>
@@ -59,8 +59,8 @@ export function GameDetail() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
       <div className="relative mb-8 overflow-hidden rounded-3xl border border-line p-6 sm:p-10" style={{ background: `linear-gradient(135deg, ${st.from}2a, ${st.to}22)` }}>
-        <span className="absolute -right-6 -bottom-10 text-[10rem] opacity-20 select-none" aria-hidden>{st.emoji}</span>
-        <PageHeader eyebrow="Game" title={<>{st.emoji} {g.name}</>} description={g.tagline} />
+        <GameIcon game={g.key} size={220} className="pointer-events-none absolute -right-8 -bottom-12 opacity-25 rotate-12" />
+        <PageHeader eyebrow="Game" title={<span className="flex items-center gap-3"><GameIcon game={g.key} size={52} />{g.name}</span>} description={g.tagline} />
         <div className="relative flex flex-wrap gap-2">
           <Button size="lg" icon={<Plus className="size-4" />} onClick={() => setCreating(true)}>CREATE ROOM</Button>
           <Button size="lg" variant="gold" icon={<Zap className="size-4" />} loading={quick.isPending} onClick={() => quick.mutate({ gameKey: g.key, entryFee: g.defaultEntry ?? 0 })}>

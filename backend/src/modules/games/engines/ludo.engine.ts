@@ -19,6 +19,8 @@ export const YARD = -1
 export const LAST_TRACK = 50
 export const HOME = 56
 const MAX_SIXES = 3
+/** Client animation timings (mirrored in frontend/src/games/ludo/LudoBoard.tsx). */
+export const LUDO_ANIM = { diceMs: 750, hopMs: 170, captureMs: 650 }
 
 export interface LudoState extends BaseState {
   colors: Color[] // colors[seat]
@@ -185,6 +187,14 @@ export const ludoEngine: GameEngine<LudoState, Move> = {
 
   getState: (s) => s,
   getCurrentSeat: (s) => (s.winnerSeat !== null || lastStanding(s) !== null ? null : s.turnSeat),
+
+  animationMs(s) {
+    const a = s.lastAction
+    if (!a) return 0
+    if (a.kind !== 'move') return LUDO_ANIM.diceMs
+    const steps = a.from === YARD ? 1 : (a.to ?? 0) - (a.from ?? 0)
+    return steps * LUDO_ANIM.hopMs + (a.captured?.length ? LUDO_ANIM.captureMs : 0)
+  },
 
   getWinner(s) {
     if (s.winnerSeat !== null) return { finished: true, outcome: 'WIN', winnerSeat: s.winnerSeat }

@@ -7,6 +7,7 @@ import { gameStyle } from '../lib/games'
 import { api } from '../services/api'
 import { useAuth } from '../store/auth'
 import type { GameInfo } from '../types/api'
+import { GameIcon } from '../components/GameIcon'
 
 const FALLBACK: GameInfo[] = [
   { key: 'ludo', name: 'Ludo', tagline: 'The classic race home.', available: true },
@@ -74,9 +75,7 @@ export function Landing() {
                   className="group card relative block h-full overflow-hidden p-4 transition duration-300 hover:-translate-y-1 hover:border-primary-2/50 sm:p-6"
                 >
                   <div className="absolute -top-10 -right-10 size-36 rounded-full opacity-30 blur-2xl transition group-hover:opacity-60" style={{ background: `linear-gradient(135deg, ${st.from}, ${st.to})` }} />
-                  <span className="relative text-4xl sm:text-5xl" aria-hidden>
-                    {st.emoji}
-                  </span>
+                  <GameIcon game={g.key} size={64} className="relative transition duration-300 group-hover:scale-110 group-hover:-rotate-6" />
                   <h3 className="relative mt-4 font-display text-lg font-bold sm:text-2xl">{g.name}</h3>
                   <p className="relative mt-1 text-xs text-muted sm:text-sm">{g.tagline}</p>
                   <span className={`relative mt-4 inline-block rounded-full px-2.5 py-1 font-mono text-[10px] tracking-wider uppercase ${g.available ? 'bg-success/15 text-success' : 'bg-surface-2 text-subtle'}`}>

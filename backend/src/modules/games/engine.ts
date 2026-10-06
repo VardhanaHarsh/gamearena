@@ -69,6 +69,11 @@ export interface GameEngine<S extends BaseState = BaseState, M = unknown> {
   endGame(state: S, forfeitSeat: number): S
   /** Move to play automatically when the current player's turn timer expires, or for bots. */
   autoMove(state: S, seat: number, rng: Rng): M | null
+  /**
+   * How long clients take to animate the most recent move. The server waits this long before
+   * starting the next turn timer / bot move, so slow, readable animations never eat a player's time.
+   */
+  animationMs?(state: S): number
 }
 
 export const clone = <T>(v: T): T => structuredClone(v)

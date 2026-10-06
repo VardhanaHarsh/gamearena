@@ -476,7 +476,9 @@ class GameServer {
     const seatNo = room.engine.getCurrentSeat(room.state)
     if (seatNo === null) return
     const seat = room.seats[seatNo]
-    const delay = seat?.isBot ? BOT_DELAY_MS : env.TURN_SECONDS * 1000
+    // Let every client finish animating the previous move before the next turn's clock starts.
+    const animation = Math.min(room.engine.animationMs?.(room.state) ?? 0, 20_000)
+    const delay = animation + (seat?.isBot ? BOT_DELAY_MS : env.TURN_SECONDS * 1000)
     room.turnDeadline = seat?.isBot ? null : Date.now() + delay
     this.io?.to(channel(room.id)).emit('game:turn', { roomId: room.id, seat: seatNo, deadline: room.turnDeadline, serverTime: Date.now() })
     room.timers.turn = setTimeout(() => void this.enqueue(room, () => this.autoPlay(room, seatNo)), delay)

@@ -8,11 +8,11 @@ import { Avatar, Badge, Button, Credits, EmptyState, Spinner, inputClass, status
 import { BOARDS } from '../games/registry'
 import { SEAT_COLORS } from '../games/types'
 import { useRoom } from '../hooks/useRoom'
-import { gameStyle } from '../lib/games'
 import { play } from '../services/sound'
 import { useAuth } from '../store/auth'
 import { useUi } from '../store/ui'
 import type { RoomView, Seat } from '../types/api'
+import { GameIcon } from '../components/GameIcon'
 
 const TURN_MS = 25_000
 
@@ -131,7 +131,6 @@ export function Room() {
   if (!room) return <Spinner label="Connecting to room" />
 
   const Board = BOARDS[room.gameKey]
-  const st = gameStyle(room.gameKey)
   const mine = room.seats.find((s) => s.userId === me?.id)
   const isHost = room.hostId === me?.id
   const run = async (fn: () => Promise<unknown>, after?: () => void) => {
@@ -160,7 +159,7 @@ export function Room() {
   return (
     <div className="mx-auto max-w-7xl px-3 py-3 sm:px-6 sm:py-6 short:py-1">
       <header className="mb-3 flex flex-wrap items-center gap-2 sm:mb-6 sm:gap-3 short:hidden">
-        <span className="hidden size-12 items-center justify-center rounded-2xl text-3xl sm:flex" style={{ background: `linear-gradient(135deg, ${st.from}44, ${st.to}44)` }}>{st.emoji}</span>
+        <GameIcon game={room.gameKey} size={48} className="hidden sm:block" />
         <div className="mr-auto">
           <h1 className="font-display text-xl font-bold sm:text-2xl">
             {room.gameName} {room.isPractice && <Badge tone="primary">Practice</Badge>}

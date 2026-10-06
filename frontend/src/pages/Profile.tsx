@@ -4,10 +4,10 @@ import { motion } from 'motion/react'
 import { Link, useParams } from 'react-router'
 import { Avatar, Badge, Credits, EmptyState, Spinner, StatCard } from '../components/ui'
 import { dateTime, pct } from '../lib/format'
-import { gameStyle } from '../lib/games'
 import { api } from '../services/api'
 import { useAuth } from '../store/auth'
 import type { Level } from '../types/api'
+import { GameIcon } from '../components/GameIcon'
 
 interface PublicProfile {
   id: string
@@ -69,7 +69,7 @@ export function Profile() {
           <StatCard label="Wins" value={p.stats.wins} />
           <StatCard label="Losses" value={p.stats.losses} />
           <StatCard label="Leaderboard rank" value={p.stats.leaderboardRank ? `#${p.stats.leaderboardRank}` : '—'} />
-          <StatCard label="Favorite game" value={p.stats.favoriteGame ? `${gameStyle(p.stats.favoriteGame).emoji} ${p.stats.favoriteGame}` : '—'} />
+          <StatCard label="Favorite game" value={p.stats.favoriteGame ? <span className="flex items-center gap-2"><GameIcon game={p.stats.favoriteGame} size={30} />{p.stats.favoriteGame}</span> : '—'} />
           <StatCard label="Credits won" value={<Credits amount={Number(p.stats.creditsWon)} />} />
         </div>
       </div>
@@ -79,7 +79,7 @@ export function Profile() {
           <ul className="space-y-3">
             {p.stats.perGame.map((g) => (
               <li key={g.game_key}>
-                <div className="mb-1 flex justify-between text-sm"><span>{gameStyle(g.game_key).emoji} {g.game_key}</span><span className="text-muted">{g.wins}W / {g.games_played}G</span></div>
+                <div className="mb-1 flex justify-between text-sm"><span className="flex items-center gap-2"><GameIcon game={g.game_key} size={22} />{g.game_key}</span><span className="text-muted">{g.wins}W / {g.games_played}G</span></div>
                 <div className="relative h-2.5 rounded-full bg-surface-2">
                   <div className="absolute h-2.5 rounded-full bg-primary/40" style={{ width: `${(g.games_played / maxGames) * 100}%` }} />
                   <div className="absolute h-2.5 rounded-full bg-success" style={{ width: `${(g.wins / maxGames) * 100}%` }} />
@@ -94,7 +94,7 @@ export function Profile() {
           <ul className="flex flex-wrap gap-2">
             {p.recent.map((r) => (
               <li key={r.room_id} title={`${r.game_key} · ${dateTime(r.settled_at)}`} className={`flex size-10 items-center justify-center rounded-xl text-lg ${r.won ? 'bg-success/20' : r.outcome === 'DRAW' ? 'bg-surface-2' : 'bg-danger/15'}`}>
-                {gameStyle(r.game_key).emoji}
+                <GameIcon game={r.game_key} size={26} />
               </li>
             ))}
             {!p.recent.length && <li className="text-sm text-subtle">No games yet.</li>}
