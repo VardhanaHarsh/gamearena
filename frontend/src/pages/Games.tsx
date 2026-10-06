@@ -66,9 +66,14 @@ export function GameDetail() {
           <Button size="lg" variant="gold" icon={<Zap className="size-4" />} loading={quick.isPending} onClick={() => quick.mutate({ gameKey: g.key, entryFee: g.defaultEntry ?? 0 })}>
             JOIN GAME
           </Button>
-          <Button size="lg" variant="secondary" icon={<Dumbbell className="size-4" />} loading={practice.isPending} onClick={() => practice.mutate({ gameKey: g.key, players: g.key === 'ludo' ? 4 : 2 })}>
+          <Button size="lg" variant="secondary" icon={<Dumbbell className="size-4" />} loading={practice.isPending && practice.variables?.players === 2} onClick={() => practice.mutate({ gameKey: g.key, players: 2 })}>
             PRACTICE MODE
           </Button>
+          {(g.maxPlayers ?? 2) > 2 && (
+            <Button size="lg" variant="ghost" loading={practice.isPending && practice.variables?.players === g.maxPlayers} onClick={() => practice.mutate({ gameKey: g.key, players: g.maxPlayers ?? 4 })}>
+              Practice vs {(g.maxPlayers ?? 4) - 1} bots
+            </Button>
+          )}
         </div>
         <p className="relative mt-3 text-xs text-muted">Join Game quick-matches you into an open {g.defaultEntry} VC room (or opens one). Practice is free, against server bots, and doesn't affect rankings.</p>
       </div>

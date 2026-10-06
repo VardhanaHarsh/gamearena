@@ -14,7 +14,7 @@ import * as rooms from '../modules/rooms/rooms.service.js'
 import { cancelRoom, settleGame, type Settlement } from '../modules/rooms/settlement.service.js'
 
 const COUNTDOWN_MS = 5000
-const BOT_DELAY_MS = 900
+const BOT_DELAY_MS = 550 // bot "thinking" time, added on top of the previous move's animation
 const EVICT_AFTER_MS = 10 * 60 * 1000
 const SNAPSHOT_TTL_SECONDS = 6 * 3600
 

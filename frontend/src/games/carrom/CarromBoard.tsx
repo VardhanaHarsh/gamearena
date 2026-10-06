@@ -40,7 +40,7 @@ type Body = { x: number; y: number; r: number; scale: number; trail: [number, nu
 
 /** Interpolated body positions at a playback time, including a sink-into-pocket animation. */
 function sample(frames: number[][], ms: number, count: number): Body[] {
-  const f = ms / FRAME_MS
+  const f = Math.max(0, ms) / FRAME_MS
   const i = Math.min(Math.floor(f), frames.length - 1)
   const k = f - i
   const a = frames[i]
@@ -133,7 +133,8 @@ export function CarromBoard({ view, seats, mySeat, isMyTurn, sendMove }: BoardPr
     let raf = 0
     const t0 = performance.now()
     const tick = (now: number) => {
-      const ms = (now - t0) * PLAYBACK_SPEED
+      // rAF timestamps can be slightly earlier than t0 on the first frame — never sample before frame 0.
+      const ms = Math.max(0, now - t0) * PLAYBACK_SPEED
       if (ms >= total) {
         setBodies(null)
         return
