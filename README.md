@@ -1,5 +1,7 @@
 # 🎮 GameArena
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/VardhanaHarsh/gamearena)
+
 **A production-style, full-stack, real-time multiplayer gaming platform prototype** — Ludo, Carrom, Tic-Tac-Toe and Connect Four, built on a modular server-authoritative game engine, a double-entry-style virtual-credit ledger, Socket.IO, PostgreSQL and Redis.
 
 > ### ⚠️ This is a portfolio prototype that uses **virtual credits only**.
