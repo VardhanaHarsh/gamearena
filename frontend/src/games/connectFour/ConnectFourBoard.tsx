@@ -12,16 +12,21 @@ const DISC = ['bg-red-500', 'bg-yellow-400']
 export function ConnectFourBoard({ view, isMyTurn, sendMove, mySeat }: BoardProps<State>) {
   const [hover, setHover] = useState<number | null>(null)
   const [busy, setBusy] = useState(false)
+  const [pendingCol, setPendingCol] = useState<number | null>(null)
   const { grid, winningCells, lastDrop } = view.state
   const cols = grid[0].length
   const isWin = (r: number, c: number) => winningCells?.some(([wr, wc]) => wr === r && wc === c)
   const drop = (c: number) => {
     if (!isMyTurn || busy || grid[0][c] !== null) return
     setBusy(true)
-    sendMove({ type: 'drop', col: c }).catch(() => {}).finally(() => setBusy(false))
+    setPendingCol(c)
+    sendMove({ type: 'drop', col: c }).catch(() => {}).finally(() => {
+      setBusy(false)
+      setPendingCol(null)
+    })
   }
   return (
-    <div className="mx-auto w-full max-w-[min(94vw,520px)]">
+    <div className="mx-auto w-full max-w-[min(94vw,520px,calc((100dvh-300px)*1.15))]">
       <div className="mb-1 grid h-8 grid-cols-7 gap-1.5 px-2" aria-hidden>
         {Array.from({ length: cols }, (_, c) => (
           <div key={c} className="flex justify-center">
@@ -37,19 +42,20 @@ export function ConnectFourBoard({ view, isMyTurn, sendMove, mySeat }: BoardProp
             onMouseEnter={() => setHover(c)}
             disabled={!isMyTurn || busy || grid[0][c] !== null}
             aria-label={`Drop disc in column ${c + 1}`}
-            className="flex flex-col gap-1.5 rounded-xl transition enabled:hover:bg-white/10 sm:gap-2"
+            className="flex touch-manipulation flex-col gap-1.5 rounded-xl transition enabled:hover:bg-white/10 sm:gap-2"
           >
             {grid.map((row, r) => {
-              const v = row[c]
+              const landing = pendingCol === c && row[c] === null && (r === grid.length - 1 || grid[r + 1][c] !== null)
+              const v = row[c] ?? (landing ? mySeat : null)
               const fresh = lastDrop?.row === r && lastDrop?.col === c
               return (
                 <span key={r} className="relative aspect-square w-full overflow-hidden rounded-full bg-[#0b1a4a] shadow-inner">
                   {v !== null && (
                     <motion.span
-                      initial={fresh ? { y: `-${(r + 1) * 115}%` } : false}
+                      initial={fresh || landing ? { y: `-${(r + 1) * 115}%` } : false}
                       animate={{ y: 0 }}
                       transition={{ type: 'spring', stiffness: 300, damping: 22 }}
-                      className={`absolute inset-[6%] rounded-full ${DISC[v]} ${isWin(r, c) ? 'ring-4 ring-white' : ''}`}
+                      className={`absolute inset-[6%] rounded-full ${DISC[v]} ${isWin(r, c) ? 'ring-4 ring-white' : ''} ${row[c] === null ? 'opacity-60' : ''}`}
                     />
                   )}
                 </span>

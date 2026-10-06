@@ -20,7 +20,7 @@ export function Dice({ value, rolling, disabled, onRoll, color }: { value: numbe
       transition={rolling ? { repeat: Infinity, duration: 0.5, ease: 'linear' } : { type: 'spring' }}
       whileHover={disabled ? undefined : { scale: 1.06 }}
       whileTap={disabled ? undefined : { scale: 0.92 }}
-      className="relative size-20 rounded-2xl border-2 bg-white shadow-xl transition disabled:opacity-70"
+      className="relative size-16 shrink-0 touch-manipulation rounded-2xl sm:size-20 border-2 bg-white shadow-xl transition disabled:opacity-70"
       style={{ borderColor: color, boxShadow: disabled ? undefined : `0 0 30px -4px ${color}` }}
     >
       <svg viewBox="0 0 100 100" className="size-full">

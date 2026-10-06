@@ -14,17 +14,68 @@ import { useAuth } from '../store/auth'
 import { useUi } from '../store/ui'
 import type { RoomView, Seat } from '../types/api'
 
-function useNow(active: boolean) {
-  const [now, setNow] = useState(Date.now())
+const TURN_MS = 25_000
+
+/** Ticks on its own so only this tiny element re-renders, not the whole room or board. */
+function useClock(active: boolean, offset: number, every = 250) {
+  const [now, setNow] = useState(() => Date.now() + offset)
   useEffect(() => {
     if (!active) return
-    const t = setInterval(() => setNow(Date.now()), 200)
+    const t = setInterval(() => setNow(Date.now() + offset), every)
     return () => clearInterval(t)
-  }, [active])
+  }, [active, offset, every])
   return now
 }
 
-function SeatCard({ seat, room, current, deadline, now }: { seat: Seat | undefined; room: RoomView; current?: boolean; deadline?: number | null; now: number }) {
+function TurnBar({ deadline, offset }: { deadline: number | null | undefined; offset: number }) {
+  const now = useClock(!!deadline, offset)
+  if (!deadline) return null
+  const left = Math.max(0, deadline - now)
+  return (
+    <div className="absolute inset-x-0 bottom-0 h-1 bg-surface-2" aria-hidden>
+      <div className={`h-1 transition-[width] duration-200 ${left < 6000 ? 'bg-danger' : 'bg-primary-2'}`} style={{ width: `${Math.min(100, (left / TURN_MS) * 100)}%` }} />
+    </div>
+  )
+}
+
+function TurnSeconds({ deadline, offset }: { deadline: number | null | undefined; offset: number }) {
+  const now = useClock(!!deadline, offset, 500)
+  if (!deadline) return null
+  const left = Math.max(0, Math.ceil((deadline - now) / 1000))
+  return <span className={`font-mono text-[11px] ${left <= 6 ? 'text-danger' : 'text-muted'}`}>{left}s</span>
+}
+
+function Countdown({ endsAt, offset }: { endsAt: number; offset: number }) {
+  const now = useClock(true, offset, 200)
+  const n = Math.max(0, Math.ceil((endsAt - now) / 1000))
+  return (
+    <motion.p key={n} initial={{ scale: 1.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="font-display text-8xl font-bold text-gradient">
+      {n}
+    </motion.p>
+  )
+}
+
+/** Compact, always-visible turn indicator for phones (the full seat cards sit below the fold there). */
+function PlayerStrip({ seats, currentSeat, deadline, offset, mySeat }: { seats: Seat[]; currentSeat: number | null; deadline: number | null; offset: number; mySeat: number | null }) {
+  return (
+    <div className="-mx-3 mb-3 flex gap-2 overflow-x-auto px-3 pb-1 lg:hidden" role="list" aria-label="Players">
+      {seats.map((s) => {
+        const turn = currentSeat === s.seat
+        return (
+          <div key={s.seat} role="listitem" className={`relative flex shrink-0 items-center gap-2 overflow-hidden rounded-xl border py-1.5 pr-3 pl-1.5 ${turn ? 'border-primary-2 bg-primary/15' : 'border-line bg-surface'} ${s.status === 'FORFEITED' ? 'opacity-40' : ''}`}>
+            <Avatar avatar={s.avatar} size={28} ring={SEAT_COLORS[s.seat]} />
+            <span className="max-w-24 truncate text-xs font-medium">{s.seat === mySeat ? 'You' : s.displayName}</span>
+            {!s.connected && !s.isBot && <WifiOff className="size-3 text-danger" aria-label="Disconnected" />}
+            {turn && <TurnSeconds deadline={deadline} offset={offset} />}
+            {turn && <TurnBar deadline={deadline} offset={offset} />}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function SeatCard({ seat, room, current, deadline, offset = 0 }: { seat: Seat | undefined; room: RoomView; current?: boolean; deadline?: number | null; offset?: number }) {
   if (!seat) {
     return (
       <div className="flex items-center gap-3 rounded-2xl border border-dashed border-line-2 p-3 text-sm text-subtle">
@@ -33,8 +84,6 @@ function SeatCard({ seat, room, current, deadline, now }: { seat: Seat | undefin
       </div>
     )
   }
-  const total = 25_000
-  const left = deadline ? Math.max(0, deadline - now) : null
   return (
     <motion.div layout className={`relative overflow-hidden rounded-2xl border p-3 transition ${current ? 'border-primary-2 bg-primary/10 shadow-[0_0_30px_-12px_var(--primary)]' : 'border-line bg-surface'}`}>
       <div className="flex items-center gap-3">
@@ -57,11 +106,7 @@ function SeatCard({ seat, room, current, deadline, now }: { seat: Seat | undefin
         </div>
         {(room.status === 'WAITING' || room.status === 'READY') && (seat.isReady ? <Badge tone="success">Ready</Badge> : <Badge>Not ready</Badge>)}
       </div>
-      {current && left !== null && (
-        <div className="absolute inset-x-0 bottom-0 h-1 bg-surface-2">
-          <div className={`h-1 transition-[width] duration-200 ${left < 6000 ? 'bg-danger' : 'bg-primary-2'}`} style={{ width: `${Math.min(100, (left / total) * 100)}%` }} />
-        </div>
-      )}
+      {current && <TurnBar deadline={deadline} offset={offset} />}
     </motion.div>
   )
 }
@@ -77,7 +122,6 @@ export function Room() {
   const [showResult, setShowResult] = useState(false)
   const [busy, setBusy] = useState(false)
   const inGame = room?.status === 'IN_PROGRESS' || room?.status === 'COMPLETED'
-  const now = useNow(!!room && room.status !== 'COMPLETED' && room.status !== 'CANCELLED') + clockOffset
 
   useEffect(() => {
     if (room?.status === 'COMPLETED' && room.result) setShowResult(true)
@@ -90,7 +134,6 @@ export function Room() {
   const st = gameStyle(room.gameKey)
   const mine = room.seats.find((s) => s.userId === me?.id)
   const isHost = room.hostId === me?.id
-  const countdown = room.countdownEndsAt ? Math.max(0, Math.ceil((room.countdownEndsAt - now) / 1000)) : null
   const run = async (fn: () => Promise<unknown>, after?: () => void) => {
     setBusy(true)
     try {
@@ -113,11 +156,11 @@ export function Room() {
   const myPayout = room.result?.payouts.find((p) => p.userId === me?.id)?.amount ?? 0
 
   return (
-    <div className="mx-auto max-w-7xl px-3 py-6 sm:px-6">
-      <header className="mb-6 flex flex-wrap items-center gap-3">
-        <span className="flex size-12 items-center justify-center rounded-2xl text-3xl" style={{ background: `linear-gradient(135deg, ${st.from}44, ${st.to}44)` }}>{st.emoji}</span>
+    <div className="mx-auto max-w-7xl px-3 py-3 sm:px-6 sm:py-6">
+      <header className="mb-3 flex flex-wrap items-center gap-2 sm:mb-6 sm:gap-3">
+        <span className="hidden size-12 items-center justify-center rounded-2xl text-3xl sm:flex" style={{ background: `linear-gradient(135deg, ${st.from}44, ${st.to}44)` }}>{st.emoji}</span>
         <div className="mr-auto">
-          <h1 className="font-display text-2xl font-bold">
+          <h1 className="font-display text-xl font-bold sm:text-2xl">
             {room.gameName} {room.isPractice && <Badge tone="primary">Practice</Badge>}
           </h1>
           <p className="flex flex-wrap items-center gap-2 text-xs text-muted">
@@ -127,7 +170,7 @@ export function Room() {
         </div>
         {!room.isPractice && (
           <div className="flex gap-2 text-center">
-            <div className="rounded-xl border border-line px-3 py-1.5">
+            <div className="hidden rounded-xl border border-line px-3 py-1.5 sm:block">
               <p className="text-[10px] text-subtle uppercase">Entry</p>
               <Credits amount={room.entryFee} size="sm" />
             </div>
@@ -140,21 +183,19 @@ export function Room() {
       </header>
 
       {!inGame ? (
-        <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
           <section className="card relative overflow-hidden p-5 sm:p-6">
             <h2 className="mb-4 font-display text-lg font-semibold">Players {room.seats.length}/{room.maxPlayers}</h2>
             <div className="grid gap-3 sm:grid-cols-2">
               {Array.from({ length: room.maxPlayers }, (_, i) => (
-                <SeatCard key={i} seat={room.seats[i]} room={room} now={now} />
+                <SeatCard key={i} seat={room.seats[i]} room={room} />
               ))}
             </div>
             <AnimatePresence>
-              {countdown !== null && room.status === 'STARTING' && (
+              {room.countdownEndsAt !== null && room.status === 'STARTING' && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 flex flex-col items-center justify-center bg-bg/85 backdrop-blur" role="status">
                   <p className="text-sm text-muted">Game starting in</p>
-                  <motion.p key={countdown} initial={{ scale: 1.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="font-display text-8xl font-bold text-gradient">
-                    {countdown}
-                  </motion.p>
+                  <Countdown endsAt={room.countdownEndsAt} offset={clockOffset} />
                 </motion.div>
               )}
             </AnimatePresence>
@@ -213,8 +254,11 @@ export function Room() {
           </aside>
         </div>
       ) : (
-        <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
-          <section>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-6">
+          <section className="min-w-0">
+            {game && room.status === 'IN_PROGRESS' && (
+              <PlayerStrip seats={room.seats} currentSeat={game.currentSeat} deadline={game.turnDeadline} offset={clockOffset} mySeat={mySeat} />
+            )}
             {game && Board ? (
               <Board view={game} seats={room.seats} mySeat={mySeat} isMyTurn={room.status === 'IN_PROGRESS' && game.currentSeat !== null && game.currentSeat === mySeat} sendMove={sendMove} />
             ) : (
@@ -222,9 +266,11 @@ export function Room() {
             )}
           </section>
           <aside className="space-y-3">
-            {room.seats.map((s) => (
-              <SeatCard key={s.seat} seat={s} room={room} now={now} current={room.status === 'IN_PROGRESS' && game?.currentSeat === s.seat} deadline={game?.currentSeat === s.seat ? game?.turnDeadline : null} />
-            ))}
+            <div className="hidden space-y-3 lg:block">
+              {room.seats.map((s) => (
+                <SeatCard key={s.seat} seat={s} room={room} offset={clockOffset} current={room.status === 'IN_PROGRESS' && game?.currentSeat === s.seat} deadline={game?.currentSeat === s.seat ? game?.turnDeadline : null} />
+              ))}
+            </div>
             {room.status === 'IN_PROGRESS' && mine && mine.status !== 'FORFEITED' && (
               <Button variant="ghost" className="w-full text-danger" icon={<DoorOpen className="size-4" />} onClick={() => run(leave, () => navigate('/lobby'))}>
                 Forfeit & leave
@@ -233,7 +279,7 @@ export function Room() {
             {room.status === 'COMPLETED' && (
               <Button className="w-full" onClick={() => setShowResult(true)} icon={<Trophy className="size-4" />}>View result</Button>
             )}
-            <p className="px-1 text-[11px] text-subtle">Every move is validated on the server. Turns auto-play after the timer; disconnected players have a grace period to reconnect.</p>
+            <p className="hidden px-1 text-[11px] text-subtle lg:block">Every move is validated on the server. Turns auto-play after the timer; disconnected players have a grace period to reconnect.</p>
           </aside>
         </div>
       )}

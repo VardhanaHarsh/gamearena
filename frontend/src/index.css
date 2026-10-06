@@ -64,6 +64,8 @@
 
 @layer base {
   html { -webkit-text-size-adjust: 100%; }
+  /* Guard: nothing may widen the layout viewport on phones (that makes mobile browsers zoom out). */
+  html, body { overflow-x: clip; }
   body {
     background: var(--bg);
     color: var(--fg);
@@ -102,6 +104,14 @@
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+}
+
+/* Horizontal scrollers (tables, chip rows) must not widen the page: without paint containment,
+   mobile Chrome expands the layout viewport to fit their content and zooms the whole page out. */
+.overflow-x-auto { contain: paint; }
+
+@media (max-width: 640px) {
+  .glass { backdrop-filter: none; -webkit-backdrop-filter: none; background: color-mix(in srgb, var(--bg-2) 94%, transparent); }
 }
 
 @keyframes demo-stripes { to { background-position: 40px 0; } }

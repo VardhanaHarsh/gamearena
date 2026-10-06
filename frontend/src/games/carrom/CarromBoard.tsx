@@ -109,19 +109,19 @@ export function CarromBoard({ view, seats, mySeat, isMyTurn, sendMove }: BoardPr
   const aimLen = 10 + power * 30
 
   return (
-    <div className="mx-auto flex w-full max-w-[min(94vw,600px)] flex-col gap-4">
+    <div className="mx-auto flex w-full max-w-[min(94vw,600px,calc(100dvh-330px))] min-w-[280px] flex-col gap-2 sm:gap-4">
       <div className="grid grid-cols-2 gap-2 text-center">
         {[0, 1].map((seat) => (
-          <div key={seat} className={`rounded-xl border px-3 py-2 ${s.turnSeat === seat ? 'border-primary-2 bg-primary/10' : 'border-line'}`}>
+          <div key={seat} className={`rounded-xl border px-3 py-1 sm:py-2 ${s.turnSeat === seat ? 'border-primary-2 bg-primary/10' : 'border-line'}`}>
             <p className="truncate text-xs text-muted">
               {seat === 0 ? '⚪ White' : '⚫ Black'} · {seats[seat]?.displayName}
             </p>
-            <p className="font-display text-2xl font-bold">{s.scores[seat]}</p>
+            <p className="font-display text-xl font-bold sm:text-2xl">{s.scores[seat]}</p>
           </div>
         ))}
       </div>
 
-      <div className="rounded-[1.6rem] bg-gradient-to-br from-amber-900 to-amber-950 p-2.5 shadow-2xl sm:p-3.5">
+      <div className="rounded-[1.4rem] bg-gradient-to-br from-amber-900 to-amber-950 p-2 shadow-2xl sm:p-3.5">
         <svg
           ref={svgRef}
           viewBox="0 0 100 100"
@@ -178,14 +178,14 @@ export function CarromBoard({ view, seats, mySeat, isMyTurn, sendMove }: BoardPr
       </div>
 
       {s.lastShot && !animating && (
-        <p className="text-center text-xs text-muted" aria-live="polite">
+        <p className="truncate text-center text-xs text-muted" aria-live="polite">
           Last shot ({seats[s.lastShot.seat]?.displayName}): {s.lastShot.summary}
           {s.queenPendingSeat !== null && ' · Queen awaiting cover'}
         </p>
       )}
 
       {isMyTurn ? (
-        <div className="card grid gap-3 p-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+        <div className="card grid grid-cols-2 gap-x-3 gap-y-2 p-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end sm:gap-3 sm:p-4">
           <label className="text-xs text-muted">
             Striker position
             <input type="range" min={0} max={1} step={0.005} value={position} onChange={(e) => setPosition(Number(e.target.value))} disabled={!canShoot} className="mt-2 w-full accent-[var(--primary)]" style={flip ? { direction: 'rtl' } : undefined} />
@@ -194,10 +194,10 @@ export function CarromBoard({ view, seats, mySeat, isMyTurn, sendMove }: BoardPr
             Power {Math.round(power * 100)}%
             <input type="range" min={0.1} max={1} step={0.01} value={power} onChange={(e) => setPower(Number(e.target.value))} disabled={!canShoot} className="mt-2 w-full accent-[var(--gold)]" />
           </label>
-          <Button size="lg" variant="gold" onClick={shoot} disabled={!canShoot || !forwardOk} loading={busy}>
+          <Button size="lg" variant="gold" className="col-span-2 sm:col-span-1" onClick={shoot} disabled={!canShoot || !forwardOk} loading={busy}>
             Strike
           </Button>
-          <p className="text-[11px] text-subtle sm:col-span-3">Drag or tap on the board to aim (forward only). The server simulates the shot.</p>
+          <p className="hidden text-[11px] text-subtle sm:col-span-3 sm:block">Drag or tap on the board to aim (forward only). The server simulates the shot.</p>
         </div>
       ) : (
         <p className="text-center text-sm text-muted">{animating ? 'Shot in motion…' : `Waiting for ${seats[s.turnSeat]?.displayName ?? 'opponent'} to strike…`}</p>
