@@ -1,7 +1,8 @@
 import { Router } from 'express'
 import { z } from 'zod'
 import { authenticate, currentUser } from '../../middleware/auth.js'
-import { rateLimit } from '../../middleware/rateLimit.js'
+import { clientIp, rateLimit } from '../../middleware/rateLimit.js'
+import { sha256 } from '../../lib/random.js'
 import { input, validate } from '../../middleware/validate.js'
 import * as auth from './auth.service.js'
 import { getMe } from '../users/users.service.js'
@@ -25,23 +26,23 @@ const resetSchema = z.object({ token: z.string().min(20).max(200), password })
 
 export const authRouter = Router()
 
-authRouter.post('/register', rateLimit('register', 10, 3600), validate(registerSchema), async (req, res) => {
+authRouter.post('/register', rateLimit('register', 30, 3600), validate(registerSchema), async (req, res) => {
   const body = input<z.infer<typeof registerSchema>>(req)
-  const user = await auth.register(body, req.ip)
+  const user = await auth.register(body, clientIp(req))
   const tokens = await auth.issueTokens({ id: user.id, role: user.role, username: user.username })
   auth.setRefreshCookie(res, tokens.refreshToken)
   res.status(201).json({ accessToken: tokens.accessToken, expiresIn: tokens.expiresIn, user: await getMe(user.id) })
 })
 
-authRouter.post('/login', rateLimit('login', 20, 900), validate(loginSchema), async (req, res) => {
+authRouter.post('/login', rateLimit('login-ip', 100, 900), rateLimit('login', 10, 900, (req) => `${clientIp(req)}:${String(req.body?.identifier ?? '').toLowerCase()}`), validate(loginSchema), async (req, res) => {
   const { identifier, password } = input<z.infer<typeof loginSchema>>(req)
-  const user = await auth.login(identifier, password, req.ip)
+  const user = await auth.login(identifier, password, clientIp(req))
   const tokens = await auth.issueTokens(user)
   auth.setRefreshCookie(res, tokens.refreshToken)
   res.json({ accessToken: tokens.accessToken, expiresIn: tokens.expiresIn, user: await getMe(user.id) })
 })
 
-authRouter.post('/refresh', rateLimit('refresh', 60, 900), async (req, res) => {
+authRouter.post('/refresh', rateLimit('refresh', 120, 900, (req) => sha256(String(req.cookies?.[auth.REFRESH_COOKIE] ?? clientIp(req))).slice(0, 32)), async (req, res) => {
   const presented = req.cookies?.[auth.REFRESH_COOKIE] as string | undefined
   if (!presented) {
     res.status(401).json({ error: { code: 'UNAUTHORIZED', message: 'No session.' } })
@@ -63,7 +64,7 @@ authRouter.post('/logout', async (req, res) => {
   res.status(204).end()
 })
 
-authRouter.post('/forgot-password', rateLimit('forgot', 5, 3600), validate(forgotSchema), async (req, res) => {
+authRouter.post('/forgot-password', rateLimit('forgot', 10, 3600), validate(forgotSchema), async (req, res) => {
   const { devResetUrl } = await auth.forgotPassword(input<z.infer<typeof forgotSchema>>(req).email)
   res.json({ message: 'If that email is registered, a reset link has been sent.', devResetUrl })
 })

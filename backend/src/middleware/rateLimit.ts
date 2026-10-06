@@ -7,9 +7,24 @@ import { logger } from '../lib/logger.js'
  * Fixed-window rate limiter backed by Redis (shared across instances).
  * Keyed by user id when authenticated, otherwise by IP.
  */
-export function rateLimit(bucket: string, limit: number, windowSeconds: number) {
+/**
+ * Real client IP. On Render the request passes through Cloudflare and Render's proxy, so `req.ip`
+ * may be a proxy address shared by everyone; Cloudflare's CF-Connecting-IP / True-Client-IP are set by
+ * the edge (a client cannot forge them there). Only trusted when running on Render.
+ */
+export function clientIp(req: Request) {
+  if (process.env.RENDER) {
+    const edge = req.headers['cf-connecting-ip'] ?? req.headers['true-client-ip']
+    if (typeof edge === 'string' && edge) return edge
+  }
+  return req.ip ?? 'unknown'
+}
+
+type KeyFn = (req: Request) => string
+
+export function rateLimit(bucket: string, limit: number, windowSeconds: number, keyFn?: KeyFn) {
   return async (req: Request, res: Response, next: NextFunction) => {
-    const id = req.user?.id ?? req.ip ?? 'unknown'
+    const id = keyFn?.(req) ?? req.user?.id ?? clientIp(req)
     const key = keys.rate(bucket, id)
     try {
       const count = await redis.incr(key)

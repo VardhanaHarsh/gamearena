@@ -16,6 +16,8 @@ const ARGON_OPTS = { memoryCost: 19_456, timeCost: 2, parallelism: 1 }
 export const hashPassword = (password: string) => hash(password, ARGON_OPTS)
 
 export const REFRESH_COOKIE = 'ga_refresh'
+/** Window in which re-presenting a just-rotated refresh token is treated as a concurrent-tab race, not theft. */
+const REUSE_GRACE_MS = 30_000
 const refreshTtlMs = () => env.REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000
 
 interface UserRow {
@@ -93,13 +95,26 @@ export async function issueTokens(user: AuthUser, familyId: string = randomUUID(
  * the whole token family is revoked, signing out every session derived from it.
  */
 export async function rotateRefreshToken(presented: string) {
-  const { rows } = await pool.query<{ id: string; user_id: string; family_id: string; expires_at: string; revoked_at: string | null }>(
-    'SELECT id, user_id, family_id, expires_at, revoked_at FROM refresh_tokens WHERE token_hash = $1',
+  const { rows } = await pool.query<{ id: string; user_id: string; family_id: string; expires_at: string; revoked_at: string | null; replaced_by: string | null }>(
+    'SELECT id, user_id, family_id, expires_at, revoked_at, replaced_by FROM refresh_tokens WHERE token_hash = $1',
     [sha256(presented)],
   )
   const token = rows[0]
   if (!token) throw Errors.unauthorized('Session expired. Please sign in again.')
   if (token.revoked_at) {
+    // Benign race: two tabs (or a reload) refreshing with the same cookie at the same moment.
+    // If this token was rotated seconds ago and its successor is still valid, issue fresh tokens
+    // in the same family instead of treating it as theft.
+    if (token.replaced_by && Date.now() - new Date(token.revoked_at).getTime() < REUSE_GRACE_MS) {
+      const { rows: successor } = await pool.query<{ revoked_at: string | null }>('SELECT revoked_at FROM refresh_tokens WHERE id = $1', [token.replaced_by])
+      if (successor[0] && !successor[0].revoked_at) {
+        const { rows: users } = await pool.query<UserRow>('SELECT id, username, role, status FROM users WHERE id = $1', [token.user_id])
+        if (users[0] && users[0].status !== 'SUSPENDED') {
+          const issued = await issueTokens(toAuthUser(users[0]), token.family_id)
+          return { user: toAuthUser(users[0]), ...issued }
+        }
+      }
+    }
     await pool.query('UPDATE refresh_tokens SET revoked_at = now() WHERE family_id = $1 AND revoked_at IS NULL', [token.family_id])
     await audit({ actorId: token.user_id, action: 'auth.refresh_token_reuse', level: 'WARN', details: { familyId: token.family_id } })
     throw Errors.unauthorized('Session expired. Please sign in again.')

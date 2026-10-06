@@ -47,12 +47,28 @@ describe('authentication', () => {
     expect(res.body.wallet.available).toBe(1000)
   })
 
-  it('rotates refresh tokens and revokes the whole family when an old token is reused', async () => {
+  it('two tabs refreshing at the same moment both stay signed in', async () => {
+    const [r1, r2] = await Promise.all([1, 2].map(() => request(app).post('/api/auth/refresh').set('Cookie', cookie)))
+    expect([r1.status, r2.status]).toEqual([200, 200])
+    cookie = cookieFrom(r1)
+    await request(app).post('/api/auth/refresh').set('Cookie', cookieFrom(r2)).expect(200)
+  })
+
+  it('rotates refresh tokens and revokes the whole family when an old token is reused after the grace window', async () => {
     const first = await request(app).post('/api/auth/refresh').set('Cookie', cookie).expect(200)
     const rotated = cookieFrom(first)
     expect(rotated).not.toBe(cookie)
+    // Simulate an attacker replaying the old token later than the concurrent-tab grace window.
+    await pool.query(`UPDATE refresh_tokens SET revoked_at = now() - interval '5 minutes' WHERE revoked_at IS NOT NULL`)
     await request(app).post('/api/auth/refresh').set('Cookie', cookie).expect(401) // reuse → theft detected
     await request(app).post('/api/auth/refresh').set('Cookie', rotated).expect(401) // family revoked
+  })
+
+  it('a logged-out token is never accepted, even within the grace window', async () => {
+    const login = await request(app).post('/api/auth/login').send({ identifier: 'auth_user', password: user.password }).expect(200)
+    const c = cookieFrom(login)
+    await request(app).post('/api/auth/logout').set('Cookie', c).expect(204)
+    await request(app).post('/api/auth/refresh').set('Cookie', c).expect(401)
   })
 
   it('password reset works once and signs out sessions', async () => {
