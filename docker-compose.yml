@@ -1,0 +1,53 @@
+# GameArena local stack. Secrets come from .env (copy .env.example → .env and fill in the JWT secrets).
+name: gamearena
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-gamearena}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-gamearena}
+    ports: ['5432:5432']
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    command: ['redis-server', '--save', '', '--appendonly', 'no']
+    ports: ['6379:6379']
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://${POSTGRES_USER:-gamearena}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-gamearena}
+      REDIS_URL: redis://redis:6379
+      CORS_ORIGINS: http://localhost:8080
+      FRONTEND_URL: http://localhost:8080
+      MIGRATIONS_DIR: /app/database/migrations
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    ports: ['4000:4000']
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      backend: { condition: service_healthy }
+    ports: ['8080:80']
+
+volumes:
+  pgdata:
