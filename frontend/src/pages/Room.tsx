@@ -154,6 +154,8 @@ export function Room() {
   const shareUrl = `${location.origin}/room/${room.id}`
   const winnerSeat = room.result?.winnerSeat
   const myPayout = room.result?.payouts.find((p) => p.userId === me?.id)?.amount ?? 0
+  const myEntry = mine && !room.isPractice ? room.entryFee : 0
+  const net = myPayout - myEntry
 
   return (
     <div className="mx-auto max-w-7xl px-3 py-3 sm:px-6 sm:py-6">
@@ -296,9 +298,14 @@ export function Room() {
             {room.result.outcome === 'FORFEIT' && <p className="text-sm text-muted">Won by forfeit.</p>}
             {!room.isPractice && (
               <div className="rounded-2xl bg-surface p-4">
-                <p className="text-xs text-subtle uppercase">Your virtual prize</p>
-                <Credits amount={myPayout} size="lg" />
-                <p className="mt-1 text-xs text-subtle">Prize pool {room.result.prizePool} VC · settled once via the ledger</p>
+                <p className="text-xs text-subtle uppercase">Net change to your wallet</p>
+                <p className={`font-display text-4xl font-bold ${net > 0 ? 'text-success' : net < 0 ? 'text-danger' : 'text-muted'}`}>
+                  {net > 0 ? '+' : net < 0 ? '−' : '±'}
+                  {Math.abs(net)} <span className="text-base font-medium text-subtle">VC</span>
+                </p>
+                <p className="mt-2 text-xs text-subtle">
+                  Entry −{myEntry} VC · {room.result.outcome === 'DRAW' ? 'pool split, stake returned' : 'prize'} +{myPayout} VC · pool {room.result.prizePool} VC
+                </p>
               </div>
             )}
             <div className="flex flex-wrap justify-center gap-2">
