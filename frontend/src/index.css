@@ -1,6 +1,9 @@
 @import 'tailwindcss';
 
 @custom-variant dark (&:where(.dark, .dark *));
+/* Landscape screens put game controls beside the board; very short ones also compact the page chrome. */
+@custom-variant land (@media (orientation: landscape) and (min-width: 640px));
+@custom-variant short (@media (orientation: landscape) and (max-height: 520px));
 
 :root {
   color-scheme: dark;

@@ -14,7 +14,7 @@ export function TicTacToeBoard({ view, isMyTurn, sendMove, mySeat }: BoardProps<
   const [pending, setPending] = useState<number | null>(null)
   const { board, winningLine } = view.state
   return (
-    <div className="mx-auto grid aspect-square w-full max-w-[min(92vw,440px,calc(100dvh-280px))] grid-cols-3 grid-rows-3 gap-2 rounded-3xl border border-line bg-surface p-2 sm:gap-3 sm:p-3">
+    <div className="mx-auto grid aspect-square w-full max-w-[min(92vw,440px,calc(100dvh-280px))] short:max-w-[calc(100dvh-130px)] grid-cols-3 grid-rows-3 gap-2 rounded-3xl border border-line bg-surface p-2 sm:gap-3 sm:p-3">
       {board.map((cell, i) => {
         const canPlay = isMyTurn && cell === null && pending === null
         const highlight = winningLine?.includes(i)

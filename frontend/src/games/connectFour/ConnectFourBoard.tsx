@@ -26,7 +26,7 @@ export function ConnectFourBoard({ view, isMyTurn, sendMove, mySeat }: BoardProp
     })
   }
   return (
-    <div className="mx-auto w-full max-w-[min(94vw,520px,calc((100dvh-300px)*1.15))]">
+    <div className="mx-auto w-full max-w-[min(94vw,520px,calc((100dvh-300px)*1.15))] short:max-w-[calc((100dvh-150px)*1.15)]">
       <div className="mb-1 grid h-8 grid-cols-7 gap-1.5 px-2" aria-hidden>
         {Array.from({ length: cols }, (_, c) => (
           <div key={c} className="flex justify-center">

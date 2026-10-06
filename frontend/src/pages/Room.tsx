@@ -58,7 +58,7 @@ function Countdown({ endsAt, offset }: { endsAt: number; offset: number }) {
 /** Compact, always-visible turn indicator for phones (the full seat cards sit below the fold there). */
 function PlayerStrip({ seats, currentSeat, deadline, offset, mySeat }: { seats: Seat[]; currentSeat: number | null; deadline: number | null; offset: number; mySeat: number | null }) {
   return (
-    <div className="-mx-3 mb-3 flex gap-2 overflow-x-auto px-3 pb-1 lg:hidden" role="list" aria-label="Players">
+    <div className="-mx-3 mb-3 flex gap-2 overflow-x-auto px-3 pb-1 lg:hidden short:mb-1" role="list" aria-label="Players">
       {seats.map((s) => {
         const turn = currentSeat === s.seat
         return (
@@ -158,8 +158,8 @@ export function Room() {
   const net = myPayout - myEntry
 
   return (
-    <div className="mx-auto max-w-7xl px-3 py-3 sm:px-6 sm:py-6">
-      <header className="mb-3 flex flex-wrap items-center gap-2 sm:mb-6 sm:gap-3">
+    <div className="mx-auto max-w-7xl px-3 py-3 sm:px-6 sm:py-6 short:py-1">
+      <header className="mb-3 flex flex-wrap items-center gap-2 sm:mb-6 sm:gap-3 short:hidden">
         <span className="hidden size-12 items-center justify-center rounded-2xl text-3xl sm:flex" style={{ background: `linear-gradient(135deg, ${st.from}44, ${st.to}44)` }}>{st.emoji}</span>
         <div className="mr-auto">
           <h1 className="font-display text-xl font-bold sm:text-2xl">

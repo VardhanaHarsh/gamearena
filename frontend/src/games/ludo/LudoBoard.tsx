@@ -92,8 +92,8 @@ export function LudoBoard({ view, seats, mySeat, isMyTurn, sendMove }: BoardProp
   )
 
   return (
-    <div className="mx-auto flex w-full max-w-[min(94vw,620px,calc(100dvh-330px))] min-w-[280px] flex-col items-center gap-3 sm:gap-4">
-      <div className="relative w-full rounded-3xl border border-line-2 bg-[#f8f5ec] p-1.5 shadow-2xl dark:bg-[#1a1830]">
+    <div className="mx-auto flex w-full max-w-[min(94vw,620px,calc(100dvh-330px))] min-w-[240px] flex-col items-center gap-3 sm:gap-4 land:max-w-full land:flex-row land:justify-center land:gap-6">
+      <div className="relative w-full shrink-0 rounded-3xl border border-line-2 land:w-[min(640px,calc(100dvh-215px))] short:w-[calc(100dvh-140px)] bg-[#f8f5ec] p-1.5 shadow-2xl dark:bg-[#1a1830]">
         <svg viewBox="0 0 15 15" className="block w-full touch-manipulation select-none" role="img" aria-label="Ludo board">
           {/* yards */}
           {(Object.keys(YARD_ORIGIN) as Color[]).map((c) => {
@@ -158,7 +158,7 @@ export function LudoBoard({ view, seats, mySeat, isMyTurn, sendMove }: BoardProp
         </svg>
       </div>
 
-      <div className="flex w-full items-center justify-center gap-3 sm:gap-4">
+      <div className="flex w-full items-center justify-center gap-3 sm:gap-4 land:w-48 land:flex-col land:items-start">
         <Dice value={s.dice ?? s.lastAction?.dice ?? null} rolling={busy && s.phase === 'ROLL'} disabled={!canRoll} color={myColor ? FILL[myColor] : '#8b5cf6'} onRoll={() => act({ type: 'roll' })} />
         <p className="flex-1 text-sm text-muted sm:flex-none sm:min-w-48" aria-live="polite">
           {isMyTurn

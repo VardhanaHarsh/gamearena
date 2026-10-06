@@ -37,7 +37,7 @@ export function Navbar() {
 
   return (
     <header className="glass sticky top-[30px] z-40 border-x-0 border-t-0">
-      <nav className="mx-auto flex h-16 max-w-7xl items-center gap-3 px-4 sm:px-6" aria-label="Main">
+      <nav className="mx-auto flex h-16 short:h-11 max-w-7xl items-center gap-3 px-4 sm:px-6" aria-label="Main">
         <Link to="/" className="flex items-center gap-2 font-display text-lg font-bold tracking-wide">
           <span className="inline-flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-cyan text-white">
             <Gamepad2 className="size-5" />
