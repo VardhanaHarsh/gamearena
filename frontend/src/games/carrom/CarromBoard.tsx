@@ -109,7 +109,7 @@ export function CarromBoard({ view, seats, mySeat, isMyTurn, sendMove }: BoardPr
   const aimLen = 10 + power * 30
 
   return (
-    <div className="mx-auto flex w-full max-w-[min(94vw,600px,calc(100dvh-330px))] min-w-[280px] flex-col gap-2 sm:gap-4">
+    <div className="mx-auto flex w-full max-w-[min(94vw,600px,calc(100dvh-420px))] min-w-[280px] flex-col gap-2 sm:gap-4">
       <div className="grid grid-cols-2 gap-2 text-center">
         {[0, 1].map((seat) => (
           <div key={seat} className={`rounded-xl border px-3 py-1 sm:py-2 ${s.turnSeat === seat ? 'border-primary-2 bg-primary/10' : 'border-line'}`}>
