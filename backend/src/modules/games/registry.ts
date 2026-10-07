@@ -1,5 +1,6 @@
 import type { BaseState, GameEngine, GameMeta } from './engine.js'
 import { carromEngine } from './engines/carrom.engine.js'
+import { checkersEngine } from './engines/checkers.engine.js'
 import { chessEngine } from './engines/chess.engine.js'
 import { connectFourEngine } from './engines/connectfour.engine.js'
 import { ludoEngine } from './engines/ludo.engine.js'
@@ -16,12 +17,11 @@ const engines: Record<string, GameEngine<any, any>> = {
   [ticTacToeEngine.meta.key]: ticTacToeEngine,
   [connectFourEngine.meta.key]: connectFourEngine,
   [chessEngine.meta.key]: chessEngine,
+  [checkersEngine.meta.key]: checkersEngine,
 }
 
 /** Games shown in the catalogue as "coming soon" — no engine yet. */
-export const comingSoon: Pick<GameMeta, 'key' | 'name' | 'tagline'>[] = [
-  { key: 'checkers', name: 'Checkers', tagline: 'Jump, capture and crown your kings.' },
-]
+export const comingSoon: Pick<GameMeta, 'key' | 'name' | 'tagline'>[] = []
 
 export const getEngine = (key: string): GameEngine<BaseState, unknown> | undefined => engines[key]
 export const allEngines = () => Object.values(engines) as GameEngine<BaseState, unknown>[]

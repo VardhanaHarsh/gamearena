@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { PlayerRef } from '../src/modules/games/engine.js'
 import { carromEngine, COIN_R, simulate } from '../src/modules/games/engines/carrom.engine.js'
+import { checkersEngine, QUIET_LIMIT, type CheckersState, type Man } from '../src/modules/games/engines/checkers.engine.js'
 import { chessEngine, legalMoves, play, type ChessState, type Piece, type Position } from '../src/modules/games/engines/chess.engine.js'
 import { connectFourEngine } from '../src/modules/games/engines/connectfour.engine.js'
 import { HOME, ludoEngine, YARD, absoluteSquare, type LudoState } from '../src/modules/games/engines/ludo.engine.js'
@@ -225,6 +226,118 @@ describe('Chess engine', () => {
       if (v.ok) s = chessEngine.applyMove(s, seat, v.move, rng)
     }
     expect(chessEngine.getWinner(s).finished).toBe(true)
+  })
+})
+
+describe('Checkers engine', () => {
+  const sq = (name: string) => (name.charCodeAt(1) - 49) * 8 + (name.charCodeAt(0) - 97)
+  const fresh = () => checkersEngine.createGame(players(2), seededRng(1))
+  const empty = (pieces: Record<string, Man>, turnSeat = 0) => {
+    const s = fresh()
+    s.board = Array(64).fill(null)
+    for (const [name, p] of Object.entries(pieces)) s.board[sq(name)] = p
+    s.turnSeat = turnSeat
+    return s
+  }
+  const red = { seat: 0, king: false }
+  const black = { seat: 1, king: false }
+  const step = (s: CheckersState, from: string, to: string) => {
+    const v = checkersEngine.validateMove(s, s.turnSeat, { type: 'move', from: sq(from), to: sq(to) })
+    expect(v, `${from}-${to}`).toMatchObject({ ok: true })
+    return v.ok ? checkersEngine.applyMove(s, s.turnSeat, v.move, seededRng(1)) : s
+  }
+
+  it('starts with 12 pieces each and 7 opening moves for Red', () => {
+    const s = fresh()
+    expect(s.board.filter((p) => p?.seat === 0)).toHaveLength(12)
+    expect(s.board.filter((p) => p?.seat === 1)).toHaveLength(12)
+    const view = checkersEngine.getState(s, 0) as { legal: Record<number, number[]> }
+    expect(Object.values(view.legal).flat()).toHaveLength(7)
+  })
+
+  it('men only move diagonally forward, and invalid moves never change state', () => {
+    const s = fresh()
+    const before = JSON.stringify(s)
+    expect(checkersEngine.validateMove(s, 0, { type: 'move', from: sq('c3'), to: sq('c4') }).ok).toBe(false)
+    expect(checkersEngine.validateMove(s, 0, { type: 'move', from: sq('c3'), to: sq('b2') }).ok).toBe(false)
+    expect(checkersEngine.validateMove(s, 1, { type: 'move', from: sq('b6'), to: sq('a5') }).ok).toBe(false) // not your turn
+    expect(checkersEngine.validateMove(s, 0, { type: 'move', from: 99, to: 0 })).toMatchObject({ ok: false, suspicious: true })
+    expect(JSON.stringify(s)).toBe(before)
+  })
+
+  it('captures are compulsory', () => {
+    const s = empty({ c3: red, g3: red, d4: black, h8: black })
+    expect(checkersEngine.validateMove(s, 0, { type: 'move', from: sq('g3'), to: sq('h4') })).toMatchObject({ ok: false, reason: expect.stringMatching(/must take/) })
+    const after = step(s, 'c3', 'e5')
+    expect(after.board[sq('d4')]).toBeNull()
+    expect(after.captured[0]).toBe(1)
+  })
+
+  it('a multi-jump keeps the turn with the same piece until it is done', () => {
+    let s = empty({ a1: red, b2: black, d4: black, h8: black })
+    s = step(s, 'a1', 'c3')
+    expect(s.turnSeat).toBe(0)
+    expect(s.chainFrom).toBe(sq('c3'))
+    expect(checkersEngine.getCurrentSeat(s)).toBe(0)
+    s = step(s, 'c3', 'e5')
+    expect(s.turnSeat).toBe(1)
+    expect(s.moves).toEqual(['a1xc3xe5'])
+    expect(s.lastMove).toMatchObject({ path: [sq('a1'), sq('c3'), sq('e5')], captured: [sq('b2'), sq('d4')] })
+  })
+
+  it('crowning ends the turn, even if the new king could keep jumping', () => {
+    const s = step(empty({ b6: red, c7: black, e7: black }), 'b6', 'd8')
+    expect(s.board[sq('d8')]).toEqual({ seat: 0, king: true })
+    expect(s.lastMove?.crowned).toBe(true)
+    expect(s.chainFrom).toBeNull()
+    expect(s.turnSeat).toBe(1)
+  })
+
+  it('kings move backwards; men cannot', () => {
+    const s = empty({ d4: { seat: 0, king: true }, f4: red, h8: black })
+    expect(checkersEngine.validateMove(s, 0, { type: 'move', from: sq('d4'), to: sq('c3') }).ok).toBe(true)
+    expect(checkersEngine.validateMove(s, 0, { type: 'move', from: sq('f4'), to: sq('e3') }).ok).toBe(false)
+  })
+
+  it('wins by capturing the last piece, and by leaving the opponent no moves', () => {
+    const last = step(empty({ c3: red, d4: black }), 'c3', 'e5')
+    expect(checkersEngine.getWinner(last)).toEqual({ finished: true, outcome: 'WIN', winnerSeat: 0 })
+    expect(last.result?.reason).toBe('no-pieces')
+    // Black's only man on b2 is boxed in by red men that cannot capture it.
+    const blocked = step(empty({ a1: red, c1: red, a3: red, c3: red, b2: black, h8: { seat: 0, king: true } }), 'h8', 'g7')
+    expect(blocked.result).toEqual({ winnerSeat: 0, reason: 'no-moves' })
+  })
+
+  it('declares a draw after 40 quiet moves each', () => {
+    let s = empty({ a1: { seat: 0, king: true }, h8: { seat: 1, king: true } })
+    s.quietPlies = QUIET_LIMIT - 1
+    s = step(s, 'a1', 'b2')
+    expect(s.result).toEqual({ winnerSeat: null, reason: 'forty-move' })
+    expect(checkersEngine.getWinner(s)).toEqual({ finished: true, outcome: 'DRAW', winnerSeat: null })
+  })
+
+  it('either player can resign', () => {
+    const s = fresh()
+    const v = checkersEngine.validateMove(s, 1, { type: 'resign' })
+    expect(v.ok).toBe(true)
+    if (v.ok) expect(checkersEngine.getWinner(checkersEngine.applyMove(s, 1, v.move, seededRng(1)))).toEqual({ finished: true, outcome: 'WIN', winnerSeat: 0 })
+  })
+
+  it('bot takes a double jump over a single', () => {
+    const s = empty({ a1: red, g1: red, b2: black, d4: black, h2: black, h8: black })
+    expect(checkersEngine.autoMove(s, 0, seededRng(5))).toEqual({ type: 'move', from: sq('a1'), to: sq('c3') })
+  })
+
+  it('bots can always finish a game', () => {
+    const rng = seededRng(21)
+    let s = fresh()
+    for (let i = 0; i < 2000 && !checkersEngine.getWinner(s).finished; i++) {
+      const seat = checkersEngine.getCurrentSeat(s)!
+      const v = checkersEngine.validateMove(s, seat, checkersEngine.autoMove(s, seat, rng))
+      expect(v.ok).toBe(true)
+      if (v.ok) s = checkersEngine.applyMove(s, seat, v.move, rng)
+    }
+    expect(checkersEngine.getWinner(s).finished).toBe(true)
   })
 })
 

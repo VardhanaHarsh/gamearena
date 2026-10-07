@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react'
 import { CarromBoard } from './carrom/CarromBoard'
+import { CheckersBoard } from './checkers/CheckersBoard'
 import { ChessBoard } from './chess/ChessBoard'
 import { ConnectFourBoard } from './connectFour/ConnectFourBoard'
 import { LudoBoard } from './ludo/LudoBoard'
@@ -14,4 +15,5 @@ export const BOARDS: Record<string, ComponentType<BoardProps<any>>> = {
   tictactoe: TicTacToeBoard,
   connectfour: ConnectFourBoard,
   chess: ChessBoard,
+  checkers: CheckersBoard,
 }

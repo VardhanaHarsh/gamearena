@@ -136,4 +136,22 @@ describe('real-time multiplayer (Tic-Tac-Toe over Socket.IO)', () => {
     await started
     expect(await balance(solo.id)).toEqual({ available: 1000, locked: 0 })
   })
+
+  it.each([
+    ['chess', { type: 'move', from: 12, to: 28 }], // e2-e4
+    ['checkers', { type: 'move', from: 18, to: 27 }], // c3-d4
+  ])('%s: a practice game plays a move, gets a bot reply and ends on resignation', async (gameKey, opening) => {
+    const solo = await player(`mp_${gameKey}`)
+    const res = await request(app).post('/api/rooms/practice').set('Authorization', `Bearer ${solo.token}`).send({ gameKey, players: 2 }).expect(201)
+    const roomId = res.body.room.id
+    const started = next(solo.socket, 'game:start')
+    await ack(solo.socket, 'room:join', { roomId })
+    await started
+    const botReplied = next<{ state: { moves: string[] }; currentSeat: number }>(solo.socket, 'game:state', (g) => g.state.moves.length === 2 && g.currentSeat === 0)
+    expect(await ack(solo.socket, 'game:move', { roomId, move: opening, clientMoveId: randomUUID(), clientTs: Date.now() })).toMatchObject({ ok: true })
+    await botReplied
+    const ended = next<{ winnerSeat: number; outcome: string }>(solo.socket, 'game:end')
+    expect(await ack(solo.socket, 'game:move', { roomId, move: { type: 'resign' }, clientMoveId: randomUUID(), clientTs: Date.now() })).toMatchObject({ ok: true })
+    expect(await ended).toMatchObject({ winnerSeat: 1, outcome: 'WIN' })
+  })
 })

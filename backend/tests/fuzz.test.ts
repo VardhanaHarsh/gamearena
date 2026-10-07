@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { BaseState, GameEngine, PlayerRef } from '../src/modules/games/engine.js'
 import { BOARD, carromEngine, COIN_R, type CarromState } from '../src/modules/games/engines/carrom.engine.js'
+import { checkersEngine, type CheckersState } from '../src/modules/games/engines/checkers.engine.js'
 import { chessEngine, type ChessState } from '../src/modules/games/engines/chess.engine.js'
 import { connectFourEngine } from '../src/modules/games/engines/connectfour.engine.js'
 import { HOME, ludoEngine, YARD, type LudoState } from '../src/modules/games/engines/ludo.engine.js'
@@ -79,6 +80,20 @@ describe('engine fuzzing (full games, invariants after every move)', { timeout: 
       for (const sq of [...Array(8).keys(), ...Array.from({ length: 8 }, (_, i) => 56 + i)]) expect(s.board[sq]?.toLowerCase()).not.toBe('p')
     })
     expect(r.finished).toBe(30)
+  })
+
+  it('Checkers — 60 games', () => {
+    const r = fuzz(checkersEngine as GameEngine<CheckersState, unknown>, 60, [2], 3000, (s) => {
+      s.board.forEach((p, sq) => {
+        if (!p) return
+        expect((Math.floor(sq / 8) + (sq % 8)) % 2, 'piece on a light square').toBe(0)
+        // a man on its own crown row would have been promoted
+        if (!p.king) expect(Math.floor(sq / 8)).not.toBe(p.seat === 0 ? 7 : 0)
+      })
+      expect(s.board.filter((p) => p?.seat === 0).length + s.captured[1]).toBe(12)
+      expect(s.board.filter((p) => p?.seat === 1).length + s.captured[0]).toBe(12)
+    })
+    expect(r.finished).toBe(60)
   })
 
   it('Ludo — 300 games with 2, 3 and 4 players', () => {
