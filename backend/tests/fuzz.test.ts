@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { BaseState, GameEngine, PlayerRef } from '../src/modules/games/engine.js'
 import { BOARD, carromEngine, COIN_R, type CarromState } from '../src/modules/games/engines/carrom.engine.js'
+import { chessEngine, type ChessState } from '../src/modules/games/engines/chess.engine.js'
 import { connectFourEngine } from '../src/modules/games/engines/connectfour.engine.js'
 import { HOME, ludoEngine, YARD, type LudoState } from '../src/modules/games/engines/ludo.engine.js'
 import { ticTacToeEngine } from '../src/modules/games/engines/tictactoe.engine.js'
@@ -68,6 +69,16 @@ describe('engine fuzzing (full games, invariants after every move)', { timeout: 
       for (let c = 0; c < 7; c++) for (let row = 0; row < 5; row++) if (s.grid[row][c] !== null) expect(s.grid[row + 1][c]).not.toBeNull()
     })
     expect(r.finished).toBe(500)
+  })
+
+  it('Chess — 30 games', () => {
+    const r = fuzz(chessEngine as GameEngine<ChessState, unknown>, 30, [2], 3000, (s) => {
+      expect(s.board.filter((p) => p === 'K')).toHaveLength(1)
+      expect(s.board.filter((p) => p === 'k')).toHaveLength(1)
+      // pawns never sit on the back ranks
+      for (const sq of [...Array(8).keys(), ...Array.from({ length: 8 }, (_, i) => 56 + i)]) expect(s.board[sq]?.toLowerCase()).not.toBe('p')
+    })
+    expect(r.finished).toBe(30)
   })
 
   it('Ludo — 300 games with 2, 3 and 4 players', () => {

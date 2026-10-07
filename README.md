@@ -2,7 +2,7 @@
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/VardhanaHarsh/gamearena)
 
-**A production-style, full-stack, real-time multiplayer gaming platform prototype** — Ludo, Carrom, Tic-Tac-Toe and Connect Four, built on a modular server-authoritative game engine, a double-entry-style virtual-credit ledger, Socket.IO, PostgreSQL and Redis.
+**A production-style, full-stack, real-time multiplayer gaming platform prototype** — Ludo, Carrom, Chess, Tic-Tac-Toe and Connect Four, built on a modular server-authoritative game engine, a double-entry-style virtual-credit ledger, Socket.IO, PostgreSQL and Redis.
 
 > ### ⚠️ This is a portfolio prototype that uses **virtual credits only**.
 > Every player receives a one-time grant of **1,000 virtual credits**. Credits have **no monetary value**, cannot be purchased, sold, transferred or withdrawn, and there is **no payment, deposit or withdrawal integration of any kind**. It does not process real-money gambling transactions.
@@ -18,7 +18,7 @@
 
 | Area | What's implemented |
 | --- | --- |
-| **Games** | Ludo (2–4 players: dice, safe squares, captures, home column, exact-roll finish, bonus rolls, three-sixes rule), Carrom (deterministic server-side 2D physics, queen & cover rule, fouls, scoring), Tic-Tac-Toe, Connect Four. Chess & Checkers listed as "coming soon". |
+| **Games** | Ludo (2–4 players: dice, safe squares, captures, home column, exact-roll finish, bonus rolls, three-sixes rule), Carrom (deterministic server-side 2D physics, queen & cover rule, fouls, scoring), Chess (full rules: castling, en passant, promotion, check/mate, stalemate, threefold, 50-move, insufficient material, resignation), Tic-Tac-Toe, Connect Four. Checkers listed as "coming soon". |
 | **Multiplayer** | Socket.IO rooms, ready/unready, host start, auto-start when full, 5-second countdown, turn timers with auto-play, invites by username + share link, reconnect with grace period, forfeit on abandonment, practice mode vs server bots, quick-match. |
 | **Room lifecycle** | `WAITING → READY → STARTING → IN_PROGRESS → COMPLETED / CANCELLED` |
 | **Wallet** | 1,000-credit welcome grant (once per account, idempotent), entry-fee **hold → capture / release**, prizes, refunds, draw splits, available vs locked balances, full ledger view. |
@@ -115,7 +115,7 @@ gamearena/
 ├── .env.example                # copy to .env (never commit .env)
 ├── database/
 │   ├── migrations/001_initial_schema.sql
-│   └── seed/demo-data.json     # demo players, completed games, open rooms
+│   └── seed/demo-data.json     # demo players and completed games
 ├── backend/
 │   ├── Dockerfile
 │   ├── src/
@@ -156,7 +156,7 @@ docker compose up -d postgres redis        # databases only
 
 cd backend && npm install
 npm run db:migrate                          # apply schema
-npm run db:seed                             # demo players, history, open rooms
+npm run db:seed                             # demo players and history
 npm run dev                                 # API + WebSocket on :4000
 
 cd ../frontend && npm install

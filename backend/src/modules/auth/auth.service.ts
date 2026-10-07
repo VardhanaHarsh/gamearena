@@ -131,7 +131,11 @@ export async function rotateRefreshToken(presented: string) {
     [token.id, issued.refreshTokenId],
   )
   if (rowCount === 0) {
-    // Lost a race with a concurrent rotation of the same token → treat as reuse.
+    // Lost a race with a concurrent rotation of the same token. If the winner rotated it just now,
+    // this is the same benign two-tabs race as above — keep the tokens we issued in this family.
+    const { rows: now } = await pool.query<{ revoked_at: string | null; replaced_by: string | null }>('SELECT revoked_at, replaced_by FROM refresh_tokens WHERE id = $1', [token.id])
+    if (now[0]?.replaced_by && now[0].revoked_at && Date.now() - new Date(now[0].revoked_at).getTime() < REUSE_GRACE_MS) return { user: toAuthUser(user), ...issued }
+    // Otherwise treat as reuse.
     await pool.query('UPDATE refresh_tokens SET revoked_at = now() WHERE family_id = $1', [token.family_id])
     throw Errors.unauthorized('Session expired. Please sign in again.')
   }

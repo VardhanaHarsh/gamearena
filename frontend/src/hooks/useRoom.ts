@@ -36,7 +36,7 @@ export function useRoom(roomId: string) {
         for (const ev of g.state.events ?? []) {
           if (ev.type === 'dice') play('dice')
           else if (ev.type === 'capture' || ev.type === 'foul') play('capture')
-          else if (['move', 'place', 'drop', 'pocket'].includes(ev.type)) play('move')
+          else if (['move', 'castle', 'place', 'drop', 'pocket'].includes(ev.type)) play('move')
         }
       }
       lastSeq.current = g.seq

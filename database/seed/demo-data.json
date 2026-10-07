@@ -16,9 +16,5 @@
     { "game": "tictactoe", "fee": 20, "players": [1, 3], "winner": null, "daysAgo": 2 },
     { "game": "ludo", "fee": 50, "players": [0, 1, 2], "winner": 2, "daysAgo": 1 },
     { "game": "carrom", "fee": 50, "players": [0, 3], "winner": 0, "daysAgo": 0 }
-  ],
-  "openRooms": [
-    { "game": "ludo", "fee": 100, "maxPlayers": 4, "host": 2 },
-    { "game": "carrom", "fee": 50, "maxPlayers": 2, "host": 3 }
   ]
 }

@@ -12,7 +12,7 @@ import { GameIcon } from '../components/GameIcon'
 const FALLBACK: GameInfo[] = [
   { key: 'ludo', name: 'Ludo', tagline: 'The classic race home.', available: true },
   { key: 'carrom', name: 'Carrom', tagline: 'Physics-driven flicks.', available: true },
-  { key: 'chess', name: 'Chess', tagline: 'The ultimate strategy duel.', available: false },
+  { key: 'chess', name: 'Chess', tagline: 'The ultimate strategy duel.', available: true },
   { key: 'tictactoe', name: 'Tic-Tac-Toe', tagline: 'Three in a row.', available: true },
   { key: 'checkers', name: 'Checkers', tagline: 'Jump and crown.', available: false },
   { key: 'connectfour', name: 'Connect Four', tagline: 'Drop and connect.', available: true },

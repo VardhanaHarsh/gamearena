@@ -17,7 +17,6 @@ interface SeedData {
   admin: { email: string; username: string; displayName: string; password: string }
   players: { email: string; username: string; displayName: string; avatar: string }[]
   completedGames: { game: string; fee: number; players: number[]; winner: number | null; daysAgo: number }[]
-  openRooms: { game: string; fee: number; maxPlayers: number; host: number }[]
 }
 
 /**
@@ -54,10 +53,6 @@ export async function seed() {
     await pool.query(`UPDATE game_rooms SET created_at = ${when}, started_at = ${when}, ended_at = ${when} + interval '15 minutes' WHERE id = $1`, [room.id])
     await pool.query(`UPDATE game_results SET settled_at = ${when} + interval '15 minutes' WHERE room_id = $1`, [room.id])
     await pool.query(`UPDATE game_players SET joined_at = ${when} WHERE room_id = $1`, [room.id])
-  }
-
-  for (const r of data.openRooms) {
-    await rooms.createRoom(players[r.host], { gameKey: r.game, entryFee: r.fee, maxPlayers: r.maxPlayers, isPrivate: false })
   }
   logger.info({ players: players.length, games: data.completedGames.length }, 'demo data seeded')
 }
